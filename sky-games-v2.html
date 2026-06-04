@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ══════════════════════════════════════════════════════════
+         📝 TEXTE VISIBLE — TITRE DE L'ONGLET DU NAVIGATEUR
+         Modifie le texte entre <title> et </title>
+    ══════════════════════════════════════════════════════════ -->
+    <title>Sky-Games | Bibliothèque de Jeux</title>
+
+    <!-- Tailwind CSS : framework de styles prêts à l'emploi (chargé depuis Internet) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* ──────────────────────────────────────────────────────
+           POLICES DE CARACTÈRES (chargées depuis Google Fonts)
+           · Orbitron  → titres, logo (look futuriste / gaming)
+           · Rajdhani  → texte courant (lisible et moderne)
+           Pour changer les polices : modifie les deux noms
+           dans l'URL ci-dessous ET dans les règles font-family.
+        ────────────────────────────────────────────────────── */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+        /* ──────────────────────────────────────────────────────
+           🎨 PALETTE DE COULEURS — modifiable ici
+           Ces 4 variables contrôlent toutes les couleurs du site.
+           · --gris-fonce : couleur de fond principale (fond sombre)
+           · --bleu-moyen : bleu vif (bouton Jouer, accents)
+           · --bleu-clair : bleu ciel (bordures, highlights, pluie)
+           · --blanc-pur  : couleur du texte principal
+        ────────────────────────────────────────────────────── */
+        :root {
+            --gris-fonce: #1a1c24;
+            --bleu-moyen: #3b82f6;
+            --bleu-clair: #7dd3fc;
+            --blanc-pur:  #ffffff;
+        }
+
+        /* Reset : les dimensions incluent padding et bordure */
+        * { box-sizing: border-box; }
+
+        /* Style de base du corps entier de la page */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--gris-fonce); /* fond sombre défini dans :root */
+            color: var(--blanc-pur);
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;      /* pas de défilement horizontal */
+            scroll-behavior: smooth; /* défilement fluide quand on clique sur un lien ancre */
+        }
+
+        /* Tous les titres et éléments .font-orbitron utilisent la police gaming */
+        h1, h2, h3, h4, .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* ──────────────────────────────────────────────────────
+           FOND ANIMÉ (canvas HTML5)
+           Le <canvas id="bg-canvas"> est collé derrière tout
+           le contenu grâce à z-index:-1 et position:fixed.
+           La pluie bleue est dessinée dessus par JavaScript.
+        ────────────────────────────────────────────────────── */
+        #bg-canvas {
+            position: fixed;         /* reste en place même en défilant */
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;             /* derrière tout le reste */
+            background: linear-gradient(to bottom, #0f172a, #1e293b); /* bleu nuit → bleu marine */
+        }
+
+        /* ──────────────────────────────────────────────────────
+           EFFET GLASSMORPHISM (verre givré)
+           Utilisé sur la navbar et le footer.
+           backdrop-filter:blur = flou de tout ce qui est derrière.
+        ────────────────────────────────────────────────────── */
+        .glass {
+            background: rgba(26, 28, 36, 0.80); /* fond semi-transparent */
+            backdrop-filter: blur(18px);          /* flou de l'arrière-plan */
+            border: 1px solid rgba(125, 211, 252, 0.15); /* bordure bleue subtile */
+        }
+
+        /* ──────────────────────────────────────────────────────
+           NUAGES DÉCORATIFS (blobs blancs flous qui traversent l'écran)
+           La durée du déplacement est définie dans le HTML :
+           style="animation-duration:50s" → plus lent
+           style="animation-duration:20s" → plus rapide
+        ────────────────────────────────────────────────────── */
+        .cloud {
+            position: fixed;
+            background: white;
+            filter: blur(60px);     /* effet nuage = gros flou */
+            opacity: 0.07;          /* très transparent pour rester discret */
+            border-radius: 50%;
+            pointer-events: none;   /* les nuages ne bloquent pas les clics */
+            z-index: 0;
+            animation: moveClouds linear infinite;
+        }
+
+        /* Déplacement des nuages de gauche à droite */
+        @keyframes moveClouds {
+            from { transform: translateX(-350px); }
+            to   { transform: translateX(calc(100vw + 350px)); }
+        }
+
+        /* ══════════════════════════════════════════════════════
+           CARTES DE JEUX (dans la bibliothèque)
+        ══════════════════════════════════════════════════════ */
+
+        /* Style de base d'une carte */
+        .game-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(125,211,252,0.10);
+            /* transition fluide pour l'effet de survol */
+            transition: all 0.32s cubic-bezier(0.4,0,0.2,1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;        /* curseur en forme de main au survol */
+            border-radius: 1.2rem;
+        }
+
+        /* Effet au survol : la carte monte et brille légèrement */
+        .game-card:hover {
+            transform: translateY(-6px) scale(1.03); /* monte de 6px et grossit légèrement */
+            border-color: var(--bleu-clair);
+            background: rgba(125,211,252,0.07);
+            box-shadow: 0 24px 50px rgba(0,0,0,0.55), 0 0 30px rgba(125,211,252,0.12);
+        }
+
+        /* Légère compression au clic (feedback visuel) */
+        .game-card:active { transform: scale(0.97); }
+
+        /* Zone image/emoji en haut de la carte */
+        .game-thumb {
+            height: 170px;          /* hauteur fixe de la miniature */
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;      /* taille de l'emoji */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Overlay bleu "VOIR LE JEU" invisible par défaut, visible au survol */
+        .game-thumb-overlay {
+            position: absolute;
+            inset: 0;                          /* couvre toute la miniature */
+            background: rgba(59,130,246,0.88); /* bleu semi-transparent */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.12em;
+            opacity: 0;            /* caché par défaut */
+            transition: opacity 0.3s;
+            color: white;
+        }
+
+        /* L'overlay apparaît quand on survole la carte */
+        .game-card:hover .game-thumb-overlay { opacity: 1; }
+
+        /* Badge de genre (ex: "Vitesse") — fond bleu ciel */
+        .tag {
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(125,211,252,0.18);
+            color: var(--bleu-clair);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        /* Badge d'âge (ex: "7+") — fond doré */
+        .tag-age {
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(251,191,36,0.15); /* or très transparent */
+            color: #fbbf24;                    /* or */
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        /* ══════════════════════════════════════════════════════
+           MODALE (fenêtre pop-up de la fiche du jeu)
+        ══════════════════════════════════════════════════════ */
+
+        /* Fond sombre derrière la modale (occupe tout l'écran) */
+        #modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10,12,20,0.85); /* quasi-noir semi-transparent */
+            backdrop-filter: blur(8px);       /* flou du contenu derrière */
+            z-index: 100;                     /* au-dessus de tout le reste */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            opacity: 0;            /* invisible par défaut */
+            pointer-events: none;  /* non-cliquable quand fermée */
+            transition: opacity 0.35s ease;
+        }
+
+        /* Quand JS ajoute la classe "open", la modale devient visible et cliquable */
+        #modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Boîte principale de la fiche (fond sombre avec bordure bleue) */
+        #modal-box {
+            background: #161921;
+            border: 1px solid rgba(125,211,252,0.25);
+            border-radius: 1.8rem;
+            max-width: 680px;    /* largeur max sur grand écran */
+            width: 100%;
+            max-height: 88vh;    /* hauteur max : 88% de l'écran */
+            overflow-y: auto;    /* défilable si contenu trop long */
+            box-shadow: 0 40px 90px rgba(0,0,0,0.7), 0 0 60px rgba(59,130,246,0.08);
+            transform: scale(0.92) translateY(24px); /* petite / décalée = état fermé */
+            transition: transform 0.35s cubic-bezier(0.34,1.3,0.64,1); /* "pop" à l'ouverture */
+        }
+
+        /* À l'ouverture : la boîte revient à taille normale */
+        #modal-overlay.open #modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Scrollbar personnalisée dans la modale */
+        #modal-box::-webkit-scrollbar { width: 6px; }
+        #modal-box::-webkit-scrollbar-track { background: #161921; }
+        #modal-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* Bandeau coloré en haut de la fiche (emoji + dégradé propre à chaque jeu) */
+        .modal-cover {
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;          /* taille de l'emoji dans la modale */
+            position: relative;
+            border-radius: 1.8rem 1.8rem 0 0; /* coins arrondis seulement en haut */
+            overflow: hidden;
+        }
+
+        /* ──────────────────────────────────────────────────────
+           BOUTON "JOUER"
+           Gradient bleu moyen → bleu clair.
+           Couleurs modifiables dans les variables --bleu-moyen / --bleu-clair.
+        ────────────────────────────────────────────────────── */
+        .btn-sky {
+            background: linear-gradient(135deg, var(--bleu-moyen), var(--bleu-clair));
+            color: #0f172a;  /* texte sombre pour contraste sur fond clair */
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-sky:hover {
+            filter: brightness(1.18); /* plus lumineux au survol */
+            box-shadow: 0 0 30px rgba(125,211,252,0.5); /* halo bleu */
+            transform: scale(1.02);
+        }
+
+        .btn-sky:active { transform: scale(0.97); }
+
+        /* Bouton ✕ pour fermer la modale */
+        .btn-close {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-close:hover { background: rgba(255,255,255,0.14); }
+
+        /* Ligne d'information dans la fiche (Genre, Thèmes, Joueurs…) */
+        .info-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05); /* séparateur discret */
+        }
+
+        /* Étiquette à gauche dans la fiche (ex: "🎮 Genre") */
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;     /* gris-bleu discret */
+            font-weight: 700;
+            min-width: 110px;   /* largeur fixe pour aligner les valeurs */
+            padding-top: 2px;
+        }
+
+        /* Valeur à droite dans la fiche (ex: "Vitesse") */
+        .info-value {
+            font-size: 0.95rem;
+            color: #e2e8f0;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        /* ══════════════════════════════════════════════════════
+           BARRE DE RECHERCHE & FILTRES
+        ══════════════════════════════════════════════════════ */
+
+        /* Boutons de filtre (pilules arrondies) */
+        .filter-btn {
+            font-size: 0.65rem;
+            padding: 5px 14px;
+            border-radius: 99px;   /* forme pilule */
+            border: 1px solid rgba(125,211,252,0.2);
+            color: #94a3b8;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* Filtre actif ou survolé : fond bleu + bordure bleue */
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(125,211,252,0.15);
+            border-color: var(--bleu-clair);
+            color: var(--bleu-clair);
+        }
+
+        /* Champ de saisie de recherche */
+        .search-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(125,211,252,0.15);
+            border-radius: 0.75rem;
+            color: white;
+            padding: 0.6rem 1rem 0.6rem 2.8rem; /* espace à gauche pour l'icône loupe */
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            outline: none;   /* supprime le contour bleu par défaut des navigateurs */
+            transition: border-color 0.2s, background 0.2s;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .search-input::placeholder { color: #475569; } /* couleur du texte indicatif */
+
+        /* Quand l'input est sélectionné (focus) : bordure bleue */
+        .search-input:focus {
+            border-color: var(--bleu-clair);
+            background: rgba(125,211,252,0.05);
+        }
+
+        /* Scrollbar personnalisée globale (navigateurs Webkit : Chrome, Safari…) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--gris-fonce); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--bleu-clair); }
+
+        /* ──────────────────────────────────────────────────────
+           ÉTOILES DÉCORATIVES (petits points blancs qui clignotent)
+           Le conteneur .star-field est fixe et couvre tout l'écran.
+           Les étoiles elles-mêmes sont créées dynamiquement par JS.
+        ────────────────────────────────────────────────────── */
+        .star-field {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none; /* ne bloque pas les interactions */
+        }
+
+        /* Animation de clignotement des étoiles */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.15; }
+            50%       { opacity: 0.6; }
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%; /* forme ronde */
+            background: white;
+            animation: twinkle ease-in-out infinite;
+        }
+
+        /* ──────────────────────────────────────────────────────
+           ANIMATION D'APPARITION DES CARTES AU CHARGEMENT
+           Les cartes "montent" depuis le bas avec un délai en cascade.
+           Le délai est appliqué par JS : animation-delay: 0.05s * index
+        ────────────────────────────────────────────────────── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-card { animation: fadeUp 0.4s ease both; }
+    </style>
+</head>
+<body>
+
+    <!-- ══════════════════════════════════════════════════════════
+         ÉLÉMENTS DE FOND ANIMÉ
+         Ces trois éléments sont positionnés derrière tout le contenu
+         (z-index négatif ou 0) et ne bloquent jamais les clics.
+    ══════════════════════════════════════════════════════════ -->
+
+    <!-- Canvas HTML5 sur lequel la pluie animée est dessinée par JS.
+         Sa taille s'adapte automatiquement à la fenêtre via initRain().
+         Pour modifier la pluie : voir la fonction drawRain() dans le JS. -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Conteneur vide : les 60 étoiles clignotantes y sont injectées
+         automatiquement par la fonction createStars() au chargement. -->
+    <div class="star-field" id="star-field"></div>
+
+    <!-- Deux nuages décoratifs flous (cercles blancs très transparents).
+         Ils se déplacent de gauche à droite en boucle via @keyframes moveClouds.
+         animation-duration : valeur en secondes — plus grand = déplacement plus lent.
+         opacity : valeur entre 0 et 1 — plus petite = plus discret. -->
+    <div class="cloud w-96 h-48 top-16" style="animation-duration:50s;"></div>
+    <div class="cloud w-72 h-36 top-1/2" style="animation-duration:70s; opacity:0.05;"></div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         BARRE DE NAVIGATION (sticky = reste collée en haut au défilement)
+         · Logo + nom du site à gauche
+         · Lien "Bibliothèque" à droite (visible sur écran moyen et plus)
+         · hidden md:flex = masqué sur mobile, visible sur écrans ≥ 768px
+    ══════════════════════════════════════════════════════════ -->
+    <nav class="px-6 py-4 flex justify-between items-center glass sticky top-0 z-50 border-b border-white/5">
+
+        <!-- Bloc logo (icône nuage + nom) -->
+        <div class="flex items-center gap-3">
+
+            <!-- Icône nuage bleue (SVG) — pour changer l'icône, remplace le <path> ci-dessous -->
+            <div class="w-10 h-10 bg-sky-400 rounded-xl flex items-center justify-center shadow-lg shadow-sky-400/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-900"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                </svg>
+            </div>
+
+            <!-- 📝 TEXTE VISIBLE — Nom du site dans la navbar -->
+            <span class="text-2xl font-bold tracking-tighter font-orbitron text-sky-300">SKY-GAMES</span>
+        </div>
+
+        <!-- Aucun lien de navigation à droite pour l'instant.
+             Pour en ajouter un plus tard, décommente et adapte ce bloc :
+        <div class="hidden md:flex gap-8 font-semibold text-xs uppercase tracking-widest text-slate-400">
+            <a href="#catalogue" class="hover:text-sky-300 transition">Bibliothèque</a>
+        </div>
+        -->
+    </nav>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECTION HÉRO — En-tête de la page
+         Grande zone centrale avec le badge, le titre et le sous-titre.
+         · pt-20 = padding-top 80px (espace sous la navbar sticky)
+         · flex flex-col items-center = contenu centré en colonne
+         · text-center = texte centré
+    ══════════════════════════════════════════════════════════ -->
+    <header class="relative pt-20 pb-14 px-6 flex flex-col items-center text-center">
+
+        <!-- ── Badge animé ───────────────────────────────────────
+             Petite pilule arrondie affichée au-dessus du titre.
+             Le point bleu clignote grâce à l'animation "pulse" native de Tailwind.
+             Pour changer le texte : modifie "Bibliothèque en ligne" ci-dessous.
+        ────────────────────────────────────────────────────── -->
+        <div class="mb-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
+             style="background:rgba(125,211,252,0.1); border:1px solid rgba(125,211,252,0.25); color:#7dd3fc;">
+            <!-- Point vert/bleu clignotant (animation "pulse" de Tailwind) -->
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block" style="animation:pulse 2s infinite;"></span>
+            <!-- 📝 TEXTE VISIBLE — Texte du badge -->
+            Bibliothèque en ligne
+        </div>
+
+        <!-- ── Titre principal ───────────────────────────────────
+             Divisé en deux <span> pour avoir deux couleurs différentes.
+             text-5xl = taille 3rem sur mobile | md:text-7xl = 4.5rem sur écrans ≥ 768px
+             font-black = font-weight: 900 (le plus gras possible)
+        ────────────────────────────────────────────────────── -->
+        <h1 class="text-5xl md:text-7xl font-black mb-5" style="letter-spacing:-0.02em;">
+            <!-- 📝 TEXTE VISIBLE — Partie blanche du titre -->
+            <span class="text-white">SKY-</span>
+            <!-- 📝 TEXTE VISIBLE — Partie bleue du titre -->
+            <span class="text-sky-400">GAMES</span>
+        </h1>
+
+        <!-- ── Phrase d'accroche ─────────────────────────────────
+             max-w-xl = largeur maximum 576px (pour rester lisible sur grands écrans)
+             text-slate-400 = gris-bleu discret
+             Pour modifier la phrase : change le texte dans les deux balises ci-dessous.
+        ────────────────────────────────────────────────────── -->
+        <p class="text-base md:text-lg max-w-xl text-slate-400 mb-3 font-light leading-relaxed">
+            <!-- 📝 TEXTE VISIBLE — Phrase d'accroche (partie grise) -->
+            Explore la bibliothèque, découvre chaque jeu en détail et
+            <!-- 📝 TEXTE VISIBLE — Partie blanche en gras de la phrase -->
+            <span class="text-white font-semibold">joue directement dans ton navigateur</span>.
+        </p>
+    </header>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         SECTION BIBLIOTHÈQUE
+         Contient : barre de recherche, filtres par genre, grille de jeux.
+         · id="catalogue" = cible du lien ancre éventuel dans la navbar
+         · max-w-7xl mx-auto = largeur maximale 80rem, centrée horizontalement
+         · px-6 = padding horizontal 24px (marges latérales)
+         · pb-24 = padding-bottom 96px (espace avant le footer)
+    ══════════════════════════════════════════════════════════ -->
+    <section id="catalogue" class="max-w-7xl mx-auto px-6 pb-24">
+
+        <!-- ── Barre de contrôle ─────────────────────────────────
+             Ligne horizontale contenant la recherche ET les filtres.
+             flex-col sur mobile (empilés) → sm:flex-row sur écran ≥ 640px (côte à côte)
+        ────────────────────────────────────────────────────── -->
+        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between mb-10">
+
+            <!-- ── Champ de recherche ────────────────────────────
+                 Le SVG loupe est positionné en absolu à l'intérieur
+                 du conteneur relatif (position:relative sur le parent,
+                 position:absolute sur le SVG).
+                 oninput="filterGames()" : relance la recherche à chaque
+                 frappe sans avoir à appuyer sur Entrée.
+            ────────────────────────────────────────────────────── -->
+            <div class="relative w-full max-w-xs">
+                <!-- Icône loupe positionnée à gauche dans le champ (décoration) -->
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
+                </svg>
+                <!-- 📝 TEXTE VISIBLE — Placeholder du champ de recherche -->
+                <!-- oninput : déclenche filterGames() à chaque modification du texte -->
+                <input type="text" id="search-input"
+                       placeholder="Rechercher un jeu…"
+                       class="search-input"
+                       oninput="filterGames()">
+            </div>
+
+            <!-- ── Boutons de filtre par genre ────────────────────
+                 Chaque bouton appelle setFilter(valeur, this).
+                 ⚠️  La valeur dans setFilter('Vitesse', this) doit être
+                     IDENTIQUE au champ "genre:" du jeu correspondant
+                     dans le tableau GAMES (sensible à la casse).
+                 · "all" = filtre spécial qui affiche tous les jeux
+                 · Le bouton actif reçoit la classe CSS "active" (fond bleu)
+                 · flex-wrap : les boutons passent à la ligne si l'écran est trop étroit
+                 Pour ajouter un genre : duplique un <button> et adapte
+                 le texte affiché ET la valeur dans setFilter().
+            ────────────────────────────────────────────────────── -->
+            <div class="flex flex-wrap gap-2 justify-center" id="filter-bar">
+                <!-- 📝 TEXTE VISIBLE — Boutons de filtre (modifie le texte affiché entre les balises) -->
+                <!-- "active" sur "Tous" = sélectionné par défaut au chargement -->
+                <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
+                <button class="filter-btn" onclick="setFilter('Vitesse', this)">Vitesse</button>
+                <button class="filter-btn" onclick="setFilter('Aventure', this)">Aventure</button>
+                <button class="filter-btn" onclick="setFilter('Puzzle', this)">Puzzle</button>
+                <button class="filter-btn" onclick="setFilter('Sport', this)">Sport</button>
+                <button class="filter-btn" onclick="setFilter('Course', this)">Course</button>
+                <button class="filter-btn" onclick="setFilter('Combat', this)">Combat</button>
+                <button class="filter-btn" onclick="setFilter('Espace', this)">Espace</button>
+                <button class="filter-btn" onclick="setFilter('Survie', this)">Survie</button>
+                <button class="filter-btn" onclick="setFilter('Gestion', this)">Gestion</button>
+            </div>
+        </div>
+
+        <!-- ── Grille de cartes ──────────────────────────────────
+             Le contenu HTML (les cartes) est entièrement généré par
+             la fonction renderGames() en JavaScript.
+             · grid-cols-2 = 2 colonnes sur mobile
+             · md:grid-cols-3 = 3 colonnes sur écran ≥ 768px
+             · lg:grid-cols-4 = 4 colonnes sur écran ≥ 1024px
+             · xl:grid-cols-5 = 5 colonnes sur écran ≥ 1280px
+             · gap-5 = 20px d'espace entre chaque carte
+        ────────────────────────────────────────────────────── -->
+        <div id="games-grid"
+             class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+            <!-- Les cartes HTML sont générées ici par JavaScript -->
+        </div>
+
+        <!-- Message "Aucun jeu trouvé" — affiché seulement quand la recherche
+             ou le filtre actif ne correspond à aucun jeu dans GAMES.
+             La classe "hidden" (display:none) le masque par défaut ;
+             renderGames() la retire automatiquement si nécessaire. -->
+        <div id="no-results" class="hidden text-center py-20 text-slate-500">
+            <div class="text-5xl mb-4">🔍</div>
+            <!-- 📝 TEXTE VISIBLE — Message quand la recherche ne trouve rien -->
+            <p class="font-orbitron text-sm uppercase tracking-widest">Aucun jeu trouvé</p>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         MODALE — FICHE DÉTAILLÉE DU JEU
+         Structure : deux couches superposées —
+         1. #modal-overlay : fond sombre semi-transparent sur tout l'écran.
+            Cliquable : ferme la modale si on clique EN DEHORS de la boîte.
+         2. #modal-box : la boîte blanche (la vraie fiche du jeu).
+         
+         Comportement d'ouverture/fermeture :
+         · Par défaut : opacity:0 + pointer-events:none = invisible et non-cliquable.
+         · Quand JS ajoute la classe "open" : opacity:1 + pointer-events:all = visible.
+         · Fermeture : clic sur le fond (#modal-overlay), clic sur ✕, ou touche Échap.
+         
+         Pour modifier le contenu : voir la fonction openModal(id) dans le JS.
+    ══════════════════════════════════════════════════════════ -->
+    <div id="modal-overlay" onclick="closeModal(event)">
+        <!-- Boîte de la fiche — max-width 680px, scroll vertical si trop haute -->
+        <div id="modal-box">
+
+            <!-- Bandeau coloré en haut (couleur propre à chaque jeu, injectée par JS) -->
+            <div class="modal-cover" id="modal-cover">
+                <!-- Emoji du jeu — mis à jour par JS depuis le champ "emoji" -->
+                <span id="modal-emoji" class="relative z-10"
+                      style="filter:drop-shadow(0 0 30px rgba(125,211,252,0.4));"></span>
+            </div>
+
+            <!-- Corps de la fiche -->
+            <div class="p-7">
+
+                <!-- En-tête : tags + titre + bouton fermer -->
+                <div class="flex items-start justify-between gap-4 mb-5">
+                    <div>
+                        <!-- Badges genre et âge — remplis par JS depuis "genre" et "ageMin" -->
+                        <div class="flex flex-wrap gap-2 mb-2" id="modal-tags"></div>
+                        <!-- Titre du jeu — rempli par JS depuis "title" -->
+                        <h2 class="text-2xl md:text-3xl font-black uppercase tracking-tight"
+                            id="modal-title"></h2>
+                    </div>
+                    <!-- Bouton fermer (✕) — appelle closeModal() sans argument -->
+                    <!-- 📝 TEXTE VISIBLE — Symbole de fermeture de la fiche -->
+                    <button class="btn-close w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-slate-400 text-lg"
+                            onclick="closeModal()">✕</button>
+                </div>
+
+                <!-- Description longue du jeu — remplie par JS depuis "description" -->
+                <p class="text-slate-300 leading-relaxed mb-6 text-sm" id="modal-description"></p>
+
+                <!-- Tableau d'infos (Genre / Thèmes / Joueurs / Durée / Âge) -->
+                <!-- Rempli dynamiquement par JS — voir la fonction openModal() -->
+                <div class="mb-8" id="modal-infos"></div>
+
+                <!-- Bouton JOUER : redirige vers le lien du jeu dans un nouvel onglet -->
+                <!-- href est mis à jour par JS avec le champ "playUrl" du jeu -->
+                <!-- target="_blank" = ouvre dans un nouvel onglet -->
+                <a id="modal-play-btn" href="#" target="_blank" rel="noopener"
+                   class="btn-sky flex items-center justify-center gap-3 w-full py-4 rounded-2xl text-base uppercase no-underline">
+                    <!-- Icône lecture (triangle play) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    <!-- 📝 TEXTE VISIBLE — Texte du bouton Jouer -->
+                    Jouer
+                </a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         FOOTER (pied de page)
+         · py-16 = padding vertical 64px (espace confortable)
+         · glass = effet verre givré (défini dans le CSS)
+         · border-t border-white/5 = fine bordure blanche très transparente en haut
+         Pour modifier le texte copyright : change la ligne <p> ci-dessous.
+    ══════════════════════════════════════════════════════════ -->
+    <footer class="py-16 text-center border-t border-white/5 glass">
+        <!-- Ligne décorative bleue (trait horizontal de 64px) -->
+        <div class="w-16 h-px bg-sky-400 mx-auto mb-8"></div>
+        <!-- 📝 TEXTE VISIBLE — Copyright en bas de page -->
+        <p class="text-slate-500 text-sm italic">Sky-Games &copy; 2024 — Joue partout, tout le temps.</p>
+    </footer>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         JAVASCRIPT
+    ══════════════════════════════════════════════════════════ -->
+    <script>
+
+    // ════════════════════════════════════════════════════════════
+    //  📋 DONNÉES DES JEUX — TOUT CE QUE TU PEUX MODIFIER
+    //
+    //  Chaque accolade { ... } = un jeu. Voici la description
+    //  complète de chaque champ :
+    //
+    //  id          → Numéro unique. Ne jamais dupliquer. Commence à 1.
+    //
+    //  emoji       → Icône du jeu (un seul emoji).
+    //                Affiché sur la carte et en gros dans la fiche.
+    //                Ex: "🚀", "🏆", "🎯", "👾"
+    //
+    //  title       → 📝 Nom du jeu affiché sur la carte et en titre de la fiche.
+    //
+    //  genre       → 📝 Catégorie du jeu. Doit correspondre EXACTEMENT
+    //                au texte dans setFilter('...') d'un bouton de filtre.
+    //                Ex: "Sport", "Puzzle", "Aventure"
+    //
+    //  ageMin      → Âge minimum recommandé (nombre entier).
+    //                Affiché comme "7+" sur la carte et "7 ans et plus" dans la fiche.
+    //
+    //  players     → 📝 Nombre de joueurs. Texte libre.
+    //                Ex: "1 joueur", "1 – 4 joueurs", "Multijoueur"
+    //
+    //  duration    → 📝 Durée d'une partie. Texte libre.
+    //                Ex: "5 – 20 min", "1 – 2 heures", "Illimitée"
+    //
+    //  themes      → 📝 Liste de mots-clés (3 maximum conseillé).
+    //                Affichés dans la fiche ET utilisés par la recherche.
+    //                Ex: ["Action", "Arcade", "Réflexes"]
+    //
+    //  description → 📝 Texte de présentation du jeu affiché dans la fiche.
+    //                Quelques phrases suffisent. Texte entièrement libre.
+    //
+    //  playUrl     → 🔗 LIEN DU JEU — remplace "#" par l'URL réelle.
+    //                Ex: "https://monsite.com/jeu/volt-runner"
+    //                Le bouton "Jouer" redirige vers ce lien dans un nouvel onglet.
+    //
+    //  color       → Dégradé du bandeau de la fiche (classes Tailwind CSS).
+    //                Format : "from-[couleur]-[intensité] to-[couleur]-[intensité]"
+    //                Couleurs disponibles : red, orange, yellow, green, blue,
+    //                                       violet, purple, pink, sky, teal, etc.
+    //                Intensités : 500, 600, 700, 800, 900, 950
+    //                Ex: "from-red-700 to-rose-950"
+    //
+    //  ── AJOUTER UN JEU ──
+    //  Copie le bloc ci-dessous, colle-le avant le "]" final,
+    //  incrémente l'id et remplis tous les champs.
+    //  {
+    //      id: 11,
+    //      emoji: "🎯",
+    //      title: "Mon Nouveau Jeu",      // 📝 Nom
+    //      genre: "Puzzle",               // 📝 Doit correspondre à un filtre
+    //      ageMin: 8,
+    //      players: "1 joueur",           // 📝
+    //      duration: "10 – 30 min",       // 📝
+    //      themes: ["Logique", "Calme"],  // 📝
+    //      description: "Ma description ici.", // 📝
+    //      playUrl: "#",   // ← REMPLACE PAR LE VRAI LIEN
+    //      color: "from-pink-700 to-rose-950"
+    //  }
+    //
+    //  ── SUPPRIMER UN JEU ──
+    //  Efface son bloc { ... } entier (y compris la virgule qui le suit).
+    // ════════════════════════════════════════════════════════════
+    const GAMES = [
+        {
+            id: 1,
+            emoji: "⚡",
+            title: "Volt Runner",                          // 📝 Nom du jeu
+            genre: "Vitesse",                              // 📝 Genre (= filtre)
+            ageMin: 7,                                     // Âge minimum
+            players: "1 joueur",                           // 📝 Nb joueurs
+            duration: "5 – 20 min",                        // 📝 Durée
+            themes: ["Action", "Arcade", "Réflexes"],      // 📝 Mots-clés
+            description: "Plonge dans un couloir électrique à grande vitesse ! Esquive les obstacles, collecte des orbes d'énergie et bats ton meilleur score. Un jeu de réflexes pur et addictif qui teste tes limites à chaque run.", // 📝 Description
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-yellow-600 to-amber-900"          // Couleur du bandeau
+        },
+        {
+            id: 2,
+            emoji: "🏹",
+            title: "Sky Archer",
+            genre: "Aventure",
+            ageMin: 10,
+            players: "1 joueur",
+            duration: "10 – 30 min",
+            themes: ["Précision", "Stratégie", "Exploration"],
+            description: "Tu es un archer légendaire suspendu entre les nuages. Vise avec précision, tiens compte du vent et progresse à travers des niveaux de plus en plus exigeants. Une aventure aérienne pleine de défis.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-green-700 to-emerald-950"
+        },
+        {
+            id: 3,
+            emoji: "🧩",
+            title: "Cloud Logic",
+            genre: "Puzzle",
+            ageMin: 8,
+            players: "1 joueur",
+            duration: "15 – 45 min",
+            themes: ["Réflexion", "Logique", "Relaxant"],
+            description: "Des nuages à assembler, des énigmes à résoudre. Cloud Logic propose des centaines de puzzles progressifs qui stimulent ta réflexion et te plongent dans une atmosphère apaisante. Idéal pour tous les âges.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-sky-700 to-blue-950"
+        },
+        {
+            id: 4,
+            emoji: "⚽",
+            title: "Gravity Ball",
+            genre: "Sport",
+            ageMin: 6,
+            players: "1 – 2 joueurs",
+            duration: "5 – 15 min",
+            themes: ["Sport", "Physique", "Compétition"],
+            description: "Le football n'a jamais été aussi dingue ! Dans Gravity Ball, la gravité change en temps réel. Marque des buts impossibles en maîtrisant une physique déjantée. Jeu parfait en duo sur le même écran.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-lime-600 to-green-950"
+        },
+        {
+            id: 5,
+            emoji: "🚗",
+            title: "Rain Drift",
+            genre: "Course",
+            ageMin: 10,
+            players: "1 joueur",
+            duration: "10 – 25 min",
+            themes: ["Course", "Drift", "Nuit pluvieuse"],
+            description: "La pluie crépite sur l'asphalte, les néons se reflètent dans les flaques. Rain Drift est un jeu de course nocturne où chaque virage glissant est une danse entre la maîtrise et le chaos. Ambiance lo-fi garantie.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-blue-700 to-indigo-950"
+        },
+        {
+            id: 6,
+            emoji: "🗡️",
+            title: "Shadow Blade",
+            genre: "Combat",
+            ageMin: 14,
+            players: "1 joueur",
+            duration: "20 – 60 min",
+            themes: ["Combat", "Action", "Boss fights"],
+            description: "Un ninja dans l'ombre des cieux. Shadow Blade propose un combat au katana intense : esquives, combos et exécutions spectaculaires face à des boss monumentaux. Un jeu de pure adrénaline pour les amateurs d'action.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-slate-600 to-slate-950"
+        },
+        {
+            id: 7,
+            emoji: "🌌",
+            title: "Star Voyager",
+            genre: "Espace",
+            ageMin: 12,
+            players: "1 joueur",
+            duration: "30 – 90 min",
+            themes: ["Espace", "Exploration", "Stratégie"],
+            description: "Pilote ton vaisseau à travers des nébuleuses inconnues, découvre de nouvelles planètes et affronte des flottes ennemies dans un univers procédural infini. Star Voyager repousse les limites de l'exploration spatiale.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-violet-800 to-purple-950"
+        },
+        {
+            id: 8,
+            emoji: "🧟",
+            title: "Dead Sky",
+            genre: "Survie",
+            ageMin: 16,
+            players: "1 joueur",
+            duration: "30 – 120 min",
+            themes: ["Horreur", "Survie", "Post-apo"],
+            description: "Le monde s'est effondré et le ciel est devenu rouge sang. Dans Dead Sky, chaque ressource compte, chaque décision peut être fatale. Un jeu de survie hardcore pour ceux qui n'ont pas peur du danger.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-red-800 to-rose-950"
+        },
+        {
+            id: 9,
+            emoji: "🏢",
+            title: "City Cloud",
+            genre: "Gestion",
+            ageMin: 8,
+            players: "1 joueur",
+            duration: "30 – 180 min",
+            themes: ["Construction", "Gestion", "Simulation"],
+            description: "Construis la ville flottante la plus majestueuse dans les nuages. Gère les ressources, satisfais tes habitants et étends ton empire vers le ciel. City Cloud est un jeu de gestion accessible et terriblement addictif.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-teal-700 to-cyan-950"
+        },
+        {
+            id: 10,
+            emoji: "🎾",
+            title: "Sky Tennis",
+            genre: "Sport",
+            ageMin: 6,
+            players: "1 – 2 joueurs",
+            duration: "5 – 20 min",
+            themes: ["Sport", "Compétition", "Arcade"],
+            description: "Du tennis en plein ciel avec des règles folles ! Des vents qui dévient la balle, des plateformes en mouvement et des power-ups explosifs. Sky Tennis réinvente le sport classique avec une touche de chaos céleste.",
+            playUrl: "#",                                  // 🔗 REMPLACE PAR LE LIEN DU JEU
+            color: "from-orange-600 to-amber-950"
+        }
+    ];
+
+    // Variables d'état globales (mémorisent ce qui est actif)
+    let currentFilter = 'all'; // filtre par genre actif ("all" = tous)
+    let currentSearch = '';    // texte de recherche en cours
+
+    // ════════════════════════════════════════════════════════════
+    //  FONCTION renderGames()
+    //  Génère et affiche les cartes dans la grille #games-grid.
+    //  Appelée : au chargement, à chaque clic filtre, à chaque frappe.
+    // ════════════════════════════════════════════════════════════
+    function renderGames() {
+        const grid      = document.getElementById('games-grid');   // la grille HTML
+        const noResults = document.getElementById('no-results');   // message "aucun jeu"
+
+        // Filtre le tableau GAMES selon le genre ET le texte de recherche
+        const filtered = GAMES.filter(g => {
+            // matchFilter : vrai si filtre = "all" OU si le genre du jeu correspond
+            const matchFilter = currentFilter === 'all' || g.genre === currentFilter;
+            // matchSearch : vrai si la recherche correspond au titre, au genre ou à un thème
+            const matchSearch = g.title.toLowerCase().includes(currentSearch.toLowerCase())
+                             || g.genre.toLowerCase().includes(currentSearch.toLowerCase())
+                             || g.themes.some(t => t.toLowerCase().includes(currentSearch.toLowerCase()));
+            return matchFilter && matchSearch; // le jeu s'affiche seulement si les deux sont vrais
+        });
+
+        // Si le tableau filtré est vide : vide la grille et montre le message
+        if (filtered.length === 0) {
+            grid.innerHTML = '';
+            noResults.classList.remove('hidden'); // rend le message visible
+            return; // arrête la fonction ici
+        }
+
+        // Sinon : cache le message et génère les cartes
+        noResults.classList.add('hidden');
+
+        // .map() transforme chaque jeu en HTML, .join('') colle tout en une chaîne
+        // animation-delay: i * 0.05s = chaque carte apparaît 50ms après la précédente (cascade)
+        grid.innerHTML = filtered.map((g, i) => `
+            <div class="game-card p-3" style="animation-delay:${i * 0.05}s;" onclick="openModal(${g.id})">
+                <div class="game-thumb rounded-xl overflow-hidden bg-gradient-to-br ${g.color}">
+                    <span>${g.emoji}</span>
+                    <div class="game-thumb-overlay rounded-xl">VOIR LE JEU</div>
+                </div>
+                <div class="mt-3 pb-1">
+                    <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                        <span class="tag">${g.genre}</span>
+                        <span class="tag-age">${g.ageMin}+</span>
+                    </div>
+                    <h4 class="font-black text-white text-sm uppercase leading-tight tracking-tight">${g.title}</h4>
+                    <p class="text-slate-500 text-xs mt-1 leading-snug">${g.themes.slice(0,2).join(' · ')}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FONCTION setFilter(val, btn)
+    //  Appelée au clic sur un bouton de filtre.
+    //  · val : valeur du filtre ("all", "Sport", "Puzzle"…)
+    //  · btn : l'élément bouton cliqué (pour lui ajouter .active)
+    // ════════════════════════════════════════════════════════════
+    function setFilter(val, btn) {
+        currentFilter = val; // mémorise le filtre actif
+        // Retire la classe "active" de tous les boutons de filtre
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Ajoute "active" au bouton cliqué (pour le mettre en évidence visuellement)
+        btn.classList.add('active');
+        renderGames(); // rafraîchit la grille
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FONCTION filterGames()
+    //  Appelée à chaque frappe dans le champ de recherche (oninput).
+    //  Récupère la valeur saisie et relance l'affichage.
+    // ════════════════════════════════════════════════════════════
+    function filterGames() {
+        currentSearch = document.getElementById('search-input').value;
+        renderGames();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FONCTION openModal(id)
+    //  Ouvre la fiche détaillée d'un jeu.
+    //  Appelée par onclick="openModal(g.id)" sur chaque carte.
+    //  · id : l'identifiant du jeu à afficher
+    // ════════════════════════════════════════════════════════════
+    function openModal(id) {
+        // Cherche le jeu dans le tableau GAMES par son id
+        const g = GAMES.find(x => x.id === id);
+        if (!g) return; // sécurité : si le jeu n'existe pas, on arrête
+
+        // 1. Met à jour le bandeau coloré (dégradé propre au jeu)
+        const cover = document.getElementById('modal-cover');
+        cover.className = `modal-cover bg-gradient-to-br ${g.color}`;
+
+        // 2. Met à jour l'emoji dans le bandeau
+        document.getElementById('modal-emoji').textContent = g.emoji;
+
+        // 3. Met à jour les badges genre + âge
+        document.getElementById('modal-tags').innerHTML = `
+            <span class="tag">${g.genre}</span>
+            <span class="tag-age">Dès ${g.ageMin} ans</span>
+        `;
+
+        // 4. Met à jour le titre de la fiche
+        document.getElementById('modal-title').textContent = g.title;
+
+        // 5. Met à jour le texte de description
+        document.getElementById('modal-description').textContent = g.description;
+
+        // 6. Construit le tableau d'informations ligne par ligne
+        // Pour ajouter une nouvelle ligne : duplique un bloc <div class="info-row">
+        document.getElementById('modal-infos').innerHTML = `
+            <div class="info-row">
+                <span class="info-label">🎮 Genre</span>
+                <span class="info-value">${g.genre}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏷️ Thèmes</span>
+                <span class="info-value">${g.themes.join(', ')}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">👥 Joueurs</span>
+                <span class="info-value">${g.players}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">⏱️ Durée</span>
+                <span class="info-value">${g.duration}</span>
+            </div>
+            <div class="info-row" style="border:none;">
+                <span class="info-label">🔞 Âge limite</span>
+                <span class="info-value" style="color:#fbbf24; font-weight:700;">${g.ageMin} ans et plus</span>
+            </div>
+        `;
+
+        // 7. Met à jour le lien du bouton "Jouer" avec l'URL du jeu.
+        //    Si playUrl vaut "#" (jeu non encore lié), le bouton est désactivé visuellement
+        //    et empêche toute navigation accidentelle.
+        const playBtn = document.getElementById('modal-play-btn');
+        if (!g.playUrl || g.playUrl === '#') {
+            // Lien non configuré : on bloque le clic et on grise le bouton
+            playBtn.removeAttribute('href');                      // supprime l'attribut href
+            playBtn.style.opacity    = '0.4';                    // grise le bouton
+            playBtn.style.cursor     = 'not-allowed';            // curseur "interdit"
+            playBtn.style.pointerEvents = 'none';                // désactive tous les clics
+            playBtn.title            = 'Lien non disponible';    // info-bulle au survol
+        } else {
+            // Lien valide : bouton actif, style normal
+            playBtn.href             = g.playUrl;
+            playBtn.style.opacity    = '';
+            playBtn.style.cursor     = '';
+            playBtn.style.pointerEvents = '';
+            playBtn.title            = '';
+        }
+
+        // 8. Rend la modale visible en ajoutant la classe CSS "open"
+        document.getElementById('modal-overlay').classList.add('open');
+
+        // 9. Bloque le défilement de la page en arrière-plan
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FONCTION closeModal(e)
+    //  Ferme la modale.
+    //  · Sans argument : ferme toujours (bouton ✕)
+    //  · Avec événement e : ne ferme que si on clique sur le fond sombre
+    //    (pas sur la boîte blanche elle-même)
+    // ════════════════════════════════════════════════════════════
+    function closeModal(e) {
+        // Si un événement est fourni et que la cible n'est pas l'overlay → ne rien faire
+        if (e && e.target !== document.getElementById('modal-overlay')) return;
+        document.getElementById('modal-overlay').classList.remove('open'); // masque la modale
+        document.body.style.overflow = ''; // réactive le défilement de la page
+    }
+
+    // Fermeture de la modale par la touche Échap du clavier
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.getElementById('modal-overlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════
+    //  ANIMATION DE PLUIE (dessinée sur le canvas de fond)
+    //  Le canvas est redessiné ~60 fois par seconde via requestAnimationFrame.
+    //  Paramètres ajustables :
+    //  · Nombre de gouttes : 90  → change la valeur dans la boucle for
+    //  · Couleur des gouttes : '#7dd3fc' (bleu-clair)
+    //  · Vitesse des gouttes : Math.random() * 13 + 4 → entre 4 et 17 px/frame
+    //  · Longueur des gouttes : Math.random() * 28 + 6 → entre 6 et 34 px
+    // ════════════════════════════════════════════════════════════
+    const bgCanvas = document.getElementById('bg-canvas'); // récupère le canvas HTML
+    const ctx = bgCanvas.getContext('2d');                  // obtient le contexte de dessin 2D
+    let drops = [];                                         // tableau qui stocke toutes les gouttes
+
+    // Initialise (ou réinitialise) les gouttes et adapte le canvas à la taille de la fenêtre
+    function initRain() {
+        bgCanvas.width  = window.innerWidth;   // largeur = largeur de la fenêtre
+        bgCanvas.height = window.innerHeight;  // hauteur = hauteur de la fenêtre
+        drops = [];
+        for (let i = 0; i < 90; i++) {  // crée 90 gouttes
+            drops.push({
+                x:       Math.random() * bgCanvas.width,  // position X aléatoire
+                y:       Math.random() * bgCanvas.height, // position Y aléatoire (départ réparti)
+                length:  Math.random() * 28 + 6,          // longueur entre 6 et 34 px
+                speed:   Math.random() * 13 + 4,          // vitesse entre 4 et 17 px/frame
+                opacity: Math.random() * 0.18             // transparence légère (max 18%)
+            });
+        }
+    }
+
+    // Dessine une frame de pluie et demande la frame suivante
+    function drawRain() {
+        ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height); // efface la frame précédente
+
+        // Dessine le fond dégradé (du bleu nuit au bleu marine)
+        const grad = ctx.createLinearGradient(0, 0, 0, bgCanvas.height);
+        grad.addColorStop(0, '#0f172a'); // couleur en haut (bleu très sombre)
+        grad.addColorStop(1, '#1e293b'); // couleur en bas (bleu marine)
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+        // Prépare le style de dessin pour les gouttes
+        ctx.strokeStyle = '#7dd3fc'; // couleur bleue des traits de pluie
+        ctx.lineWidth = 1;
+        ctx.lineCap = 'round';       // extrémités arrondies
+
+        drops.forEach(d => {
+            ctx.globalAlpha = d.opacity; // applique la transparence de cette goutte
+            ctx.beginPath();
+            ctx.moveTo(d.x, d.y);             // début du trait
+            ctx.lineTo(d.x, d.y + d.length);  // fin du trait (vers le bas)
+            ctx.stroke();                       // dessine le trait
+
+            d.y += d.speed; // fait descendre la goutte
+
+            // Quand la goutte sort par le bas, elle repart du haut à une position X aléatoire
+            if (d.y > bgCanvas.height) {
+                d.y = -d.length;
+                d.x = Math.random() * bgCanvas.width;
+            }
+        });
+
+        ctx.globalAlpha = 1; // remet l'opacité à 100% pour les dessins suivants
+        requestAnimationFrame(drawRain); // planifie la prochaine frame (~60 fps)
+    }
+
+    // Réinitialise la pluie si la fenêtre est redimensionnée
+    window.addEventListener('resize', initRain);
+    initRain(); // premier appel pour créer les gouttes
+    drawRain(); // lance la boucle d'animation
+
+    // ════════════════════════════════════════════════════════════
+    //  ÉTOILES DÉCORATIVES
+    //  Crée 60 petits points blancs clignotants positionnés aléatoirement.
+    //  Appelée une seule fois au chargement (IIFE = fonction auto-exécutée).
+    //  · Nombre d'étoiles : 60 → change la condition i < 60
+    //  · Taille des étoiles : entre 0.5 et 2.5 px
+    // ════════════════════════════════════════════════════════════
+    (function createStars() {
+        const sf = document.getElementById('star-field'); // le conteneur fixe
+        for (let i = 0; i < 60; i++) {
+            const s = document.createElement('div'); // crée un <div> par étoile
+            s.className = 'star';
+            const size = Math.random() * 2 + 0.5; // taille entre 0.5 et 2.5 px
+            s.style.cssText = `
+                width:${size}px; height:${size}px;
+                top:${Math.random() * 100}%;        /* position verticale aléatoire */
+                left:${Math.random() * 100}%;       /* position horizontale aléatoire */
+                animation-duration:${2 + Math.random() * 4}s;  /* durée clignotement */
+                animation-delay:${Math.random() * 4}s;          /* délai décalé */
+            `;
+            sf.appendChild(s); // ajoute l'étoile dans le conteneur
+        }
+    })(); // les () à la fin = auto-exécution immédiate
+
+    // ════════════════════════════════════════════════════════════
+    //  INITIALISATION — appel au chargement de la page
+    //  Affiche tous les jeux dans la grille dès l'ouverture du site.
+    // ════════════════════════════════════════════════════════════
+    renderGames();
+
+    </script>
+</body>
+</html>

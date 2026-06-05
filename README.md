@@ -49,13 +49,13 @@ Le projet est un **fichier HTML unique** (vanilla JS + Tailwind CSS CDN) avec un
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                                                         │
-│   HTML5          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  Structure       │
-│   CSS3           ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  Animations      │
+│   HTML5          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  Structure        │
+│   CSS3           ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  Animations       │
 │   JavaScript     ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  Logique (Vanilla)│
-│   Tailwind CSS   ▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░  UI (CDN)        │
-│   Canvas API     ▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░  Pluie animée    │
+│   Tailwind CSS   ▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░  UI (CDN)         │
+│   Canvas API     ▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░  Pluie animée     │
 │                                                         │
-│   Dépendances : 0 npm  ·  0 build  ·  1 fichier        │
+│   Dépendances : 0 npm  ·  0 build  ·  1 fichier         │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -70,7 +70,7 @@ Le projet est un **fichier HTML unique** (vanilla JS + Tailwind CSS CDN) avec un
 ```
 sky-games/
 │
-├── sky-games-v3.html     ← Tout le projet est ici (HTML + CSS + JS)
+├── sky-games-v2.html     ← Tout le projet est ici (HTML + CSS + JS)
 └── README.md
 ```
 
@@ -94,28 +94,10 @@ Le tableau `GAMES` dans le JS contient toutes les données des jeux :
 
 -----
 
-## ✦ Lancer le projet
-
-```bash
-# Cloner le repo
-git clone https://github.com/ton-pseudo/sky-games.git
-
-# Ouvrir directement dans le navigateur
-open sky-games-v3.html
-# ou double-cliquer sur le fichier — c'est tout.
-```
-
-> Aucune installation, aucun `npm install`, aucun build. Juste un fichier HTML.
-
------
-
 ## ✦ Ajouter un jeu
 
-1. Ouvre `sky-games-v3.html`
-1. Trouve le tableau `const GAMES = [...]` dans le JS
-1. Copie-colle un bloc existant et modifie les champs
-1. Assure-toi que le champ `genre` correspond **exactement** à un bouton de filtre
-1. Remplace `playUrl: "#"` par le vrai lien du jeu
+Si vous avez une idées de jeux à but culturel, éducatifs ou pour le loisir. 
+Merci de nous les soumettres à cette adresse email : choplin.quentin1@gmail.com
 
 -----
 
@@ -156,6 +138,6 @@ open sky-games-v3.html
 
 **Sky-Games** — fait avec ☁️ et beaucoup de ⚡
 
-*`© 2024 Sky-Games — Joue partout, tout le temps.`*
+*`© 2026 Sky-Games — Joue partout, tout le temps.`*
 
 </div>

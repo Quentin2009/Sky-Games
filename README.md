@@ -71,7 +71,8 @@ Le projet est un **fichier HTML unique** (vanilla JS + Tailwind CSS CDN) avec un
 sky-games/
 │
 ├── sky-games-v2.html     ← Tout le projet est ici (HTML + CSS + JS)
-└── README.md
+├── README.md
+└── Jeux/
 ```
 
 Le tableau `GAMES` dans le JS contient toutes les données des jeux :
